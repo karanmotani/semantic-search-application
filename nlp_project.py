@@ -4,9 +4,9 @@ from nltk.corpus import reuters
 import time
 import pysolr
 
-nltk.download('reuters')
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
+# nltk.download('reuters')
+# nltk.download('punkt')
+# nltk.download('averaged_perceptron_tagger')
 
 start_time = time.clock()
 
@@ -19,9 +19,9 @@ train_docs = list(filter(lambda doc: doc.startswith("train"),documentIDs))
 test_docs = list(filter(lambda doc: doc.startswith("test"),documentIDs))
 
 print("# Documents :", len(documentIDs))
-print('\n')
 
 docList = []
+results = []
 
 for i in range(len(test_docs)):
     sentence = tokenize.sent_tokenize(reuters.raw(documentIDs[i]).replace("\n",""))
@@ -30,13 +30,19 @@ for i in range(len(test_docs)):
         docList.append({"id": id,"text": sentence[j]})
 
 solr.add(docList)
-results = solr.search('text: (suppliers were)', sort='score desc')
+input = 'suppliers were. production'
+input = tokenize.sent_tokenize(input.replace("\n",""))
+print('Input sentence is: ', input, '\n')
+for i in range(len(input)):
+    testSentence = 'text: (' + input[i] + ')'
+    results.append(solr.search(testSentence, sort='score desc'))
 
-print(results, '\n')
-print("Saw {0} result(s).".format(len(results)), '\n')
+for i in range(len(results)):
+    # print("Saw {0} result(s).".format(len(results[i])), '\n')
+    print('Input sentence', i+1, ': ', input[i])
+    for result in results[i]:
+        print("The ID is '{0}'.".format(result['id']))
+        print("The text is '{0}'.".format(result['text']))
+        print('\n')
 
-for result in results:
-    print("The ID is '{0}'.".format(result['id']))
-    print("The title is '{0}'.".format(result['text']))
-
-print("\nTotal Time Taken: " , round((time.clock() - start_time)/60,2), " minutes \n")
+print("Total Time Taken: " , round((time.clock() - start_time)/60,2), " minutes \n")

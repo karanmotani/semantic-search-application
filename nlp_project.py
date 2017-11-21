@@ -3,6 +3,7 @@ from nltk import tokenize
 from nltk.corpus import reuters 
 import time
 import pysolr
+from solrq import Q
 from nltk.stem.porter import *
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
@@ -27,9 +28,9 @@ def getDocuments():
 
 def getInput():
     # Getting the input search query
-    input = 'suppliers were. production'
+    input = 'take care. How are you?'
     input = tokenize.sent_tokenize(input.replace('\n', ''))
-    print('Input sentence is: ', input)
+    # print('Input sentence is: ', input)
 
     return input
 
@@ -45,46 +46,165 @@ def segmentation(documents, documentIDs):
     return docList
 
 
-def indexing(documents, documentIDs):
+def indexing(documents):
     docList = []
+
     for i in range(len(documents)):
-        sentence = tokenize.sent_tokenize(reuters.raw(documentIDs[i]).replace('\n', ''))
+        sentence = tokenize.sent_tokenize(reuters.raw(documents[i]).replace('\n', ''))
         for j in range(len(sentence)):
 
+            tokens = ' '
+            pos = ' '
+            stems = []
+            lemmas = []
+            hypernyms = ' '
+            hyponyms = ' '
+            meronyms = ' '
+            holonyms = ' '
+
+            id = str(documents[i]) + '-' + str(j)
+
             # tokenize the words from the string
-            tokens = tokenization(sentence[j])
+            listOfTokens = tokenization(sentence[j])
+            tokens += ' '.join(str(x) for x in listOfTokens) + ' '
 
             # get POS tags for the tokens
-            pos = posTagging(tokens)
+            pos += ' '.join(str(y) for x, y in posTagging(listOfTokens)) + ' '
 
-            for k in range(len(tokens)):
-
+            for k in range(len(listOfTokens)):
                 # Stem the tokens generated from tokenization
-                stems = stemmer(tokens[k])
+                stems.append(stemmer(listOfTokens[k]))
+                # stems += stemmer(listOfTokens[k]) + ' '
 
                 # Lemmatize the tokens generated from tokenization
-                lemmas = lemmatize(tokens[k])
+                lemmas.append(lemmatize(listOfTokens[k]))
+                # lemmas += lemmatize(listOfTokens[k]) + ' '
 
                 # get the Hypernyms of the tokens generated from tokenization
-                hypernyms = getHypernym(tokens[k])
+                # hypernyms.append(getHypernym(listOfTokens[k]))
+                hypernyms += ' '.join(str(x) for x in getHypernym(listOfTokens[k])) + ' '
 
                 # get the Hyponyms of the tokens generated from tokenization
-                hyponyms = getHyponymn(tokens[k])
+                # hyponyms.append(getHyponymn(listOfTokens[k]))
+                hyponyms += ' '.join(str(x) for x in getHyponymn(listOfTokens[k])) + ' '
 
                 # get the Meronyms of the tokens generated from tokenization
-                meronyms = getMeronym(tokens[k])
+                # meronyms.append(getMeronym(listOfTokens[k]))
+                meronyms += ' '.join(str(x) for x in getMeronym(listOfTokens[k])) + ' '
 
                 # get the Holonyms of the tokens generated from tokenization
-                holonyms = getHolonyms(tokens[k])
+                # holonyms.append(getHolonyms(listOfTokens[k]))
+                holonyms += ' '.join(str(x) for x in getHolonyms(listOfTokens[k])) + ' '
 
+            stems = ' '.join(str(x) for x in stems)
+            lemmas = ' '.join(str(x) for x in lemmas)
+
+            docList.append({'id': id,
+                            'text': sentence[j],
+                            'tokens': tokens,
+                            'posTag': pos,
+                            'stem': stems,
+                            'lemma': lemmas,
+                            'hypernym': hypernyms,
+                            'hyponym': hyponyms,
+                            'meronym': meronyms,
+                            'holonym': holonyms
+                            },)
         break
 
-    # print(docList)
+    return docList
+
+
+def queryIndexing(documents):
+    docList = []
+
+    for i in range(len(documents)):
+        sentence = tokenize.sent_tokenize(documents[i].replace('\n', ''))
+        for j in range(len(sentence)):
+
+            tokens = ' '
+            pos = ' '
+            stems = []
+            lemmas = []
+            hypernyms = ' '
+            hyponyms = ' '
+            meronyms = ' '
+            holonyms = ' '
+
+            # id = str(documents[i]) + '-' + str(j)
+            # print(id)
+
+            # tokenize the words from the string
+            listOfTokens = tokenization(sentence[j])
+            tokens += ' '.join(str(x) for x in listOfTokens) + ' '
+            # print(listOfTokens)
+
+            # get POS tags for the tokens
+            pos += ' '.join(str(y) for x, y in posTagging(listOfTokens)) + ' '
+
+            for k in range(len(listOfTokens)):
+                # Stem the tokens generated from tokenization
+                stems.append(stemmer(listOfTokens[k]))
+                # stems += stemmer(listOfTokens[k]) + ' '
+                # print(stems)
+
+                # Lemmatize the tokens generated from tokenization
+                lemmas.append(lemmatize(listOfTokens[k]))
+                # lemmas += lemmatize(listOfTokens[k]) + ' '
+                # print(lemmas)
+
+                # get the Hypernyms of the tokens generated from tokenization
+                # hypernyms.append(getHypernym(listOfTokens[k]))
+                hypernyms += ' '.join(str(x) for x in getHypernym(listOfTokens[k])) + ' '
+                # print(hypernyms)
+
+                # get the Hyponyms of the tokens generated from tokenization
+                # hyponyms.append(getHyponymn(listOfTokens[k]))
+                hyponyms += ' '.join(str(x) for x in getHyponymn(listOfTokens[k])) + ' '
+                # print(hyponyms)
+
+                # get the Meronyms of the tokens generated from tokenization
+                # meronyms.append(getMeronym(listOfTokens[k]))
+                meronyms += ' '.join(str(x) for x in getMeronym(listOfTokens[k])) + ' '
+                # print(meronyms)
+
+                # get the Holonyms of the tokens generated from tokenization
+                # holonyms.append(getHolonyms(listOfTokens[k]))
+                holonyms += ' '.join(str(x) for x in getHolonyms(listOfTokens[k])) + ' '
+                # print(holonyms)
+
+            stems = ' '.join(str(x) for x in stems)
+            lemmas = ' '.join(str(x) for x in lemmas)
+
+            # print(stems)
+            # print(lemmas)
+            # print(hypernyms)
+            # print(hyponyms)
+            # print(meronyms)
+            # print(holonyms)
+
+            docList.append({
+                            # 'id': id,
+                            'tokens': tokens,
+                            'posTag': pos,
+                            'stem': stems,
+                            'lemma': lemmas,
+                            'hypernym': hypernyms,
+                            'hyponym': hyponyms,
+                            'meronym': meronyms,
+                            'holonym': holonyms
+                            },)
+
+    # for i in docList:
+    #     print(i)
+
+    return docList
 
 
 def tokenization(sentence):
     tokens = tokenize.word_tokenize(sentence)
     # print(tokens)
+    # print(type(tokens))
 
     return tokens
 
@@ -93,6 +213,7 @@ def stemmer(token):
     stemmer = PorterStemmer()
     stem = stemmer.stem(token)
     # print(token, stem)
+    # print(type(stem))
 
     return stem
 
@@ -101,6 +222,7 @@ def lemmatize(token):
     lemmatizer = WordNetLemmatizer()
     lemma = lemmatizer.lemmatize(token)
     # print(token, lemma)
+    # print(type(lemma))
 
     return lemma
 
@@ -108,6 +230,7 @@ def lemmatize(token):
 def posTagging(tokens):
     posTags = nltk.pos_tag(tokens)
     # print(posTags)
+    # print(type(posTags))
 
     return posTags
 
@@ -121,7 +244,7 @@ def getHypernym(token):
                 hypernym.append(l.name())
     # print(token, set(hypernym))
 
-    return set(hypernym)
+    return list(set(hypernym))
 
 
 def getHyponymn(token):
@@ -131,9 +254,9 @@ def getHyponymn(token):
         for h in synset.hyponyms():
             for l in h.lemmas():
                 hyponym.append(l.name())
-    print(token, set(hyponym))
+    # print(token, set(hyponym))
 
-    return set(hyponym)
+    return list(set(hyponym))
 
 
 def getMeronym(token):
@@ -145,7 +268,7 @@ def getMeronym(token):
                 meronym.append(l.name())
     # print(token, set(meronym))
 
-    return set(meronym)
+    return list(set(meronym))
 
 
 def getHolonyms(token):
@@ -157,7 +280,7 @@ def getHolonyms(token):
                 holonym.append(l.name())
     # print(token, set(holonym))
 
-    return set(holonym)
+    return list(set(holonym))
 
 
 def solrData(indexData):
@@ -181,10 +304,35 @@ def searching(input):
             print("The text is '{0}'.".format(result['text']))
 
 
+def deeperSearch(queryIndex):
+    results = []
+
+    # Deeper NLP Pipeline search
+    for i in range(len(queryIndex)):
+        tokens = queryIndex[i]['tokens']
+        stems = queryIndex[i]['stem']
+        lemmas = queryIndex[i]['lemma']
+        posTags = queryIndex[i]['posTag']
+        hypernyms = queryIndex[i]['hypernym']
+        hyponyms = queryIndex[i]['hyponym']
+        meronyms = queryIndex[i]['meronym']
+        holonyms = queryIndex[i]['holonym']
+
+        results.append(solr.search(Q(tokens=tokens) | Q(stem=stems), sort='score desc', score=True))
+
+    for i in range(len(results)):
+        print('\n-----------------------------------------------------------------------------------------------\n')
+        print("Saw {0} result(s).".format(len(results[i])), '\n')
+        print('Input sentence', i + 1, ': ', input[i])
+        for result in results[i]:
+            print("The ID is '{0}'.".format(result['id']))
+            print("The ID is '{0}'.".format(result['text']))
+
+
 if __name__ == '__main__':
     start_time = time.clock()
     documentIDs, train, test = getDocuments()
-    # input = getInput()
+    input = getInput()
 
     # Task 2 - Naive approach
     # indexData = segmentation(test, documentIDs)
@@ -192,5 +340,9 @@ if __name__ == '__main__':
     # searching(input)
 
     # Task 3 - Deeper NLP Pipeline
-    indexing(test, documentIDs)
+    index = indexing(train)
+    solrData(index)
+    queryIndex = queryIndexing(input)
+    deeperSearch(queryIndex)
+
     print('Total Time Taken: ', round((time.clock() - start_time) / 60, 2), ' minutes')

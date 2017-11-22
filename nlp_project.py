@@ -318,15 +318,19 @@ def deeperSearch(queryIndex):
         meronyms = queryIndex[i]['meronym']
         holonyms = queryIndex[i]['holonym']
 
-        results.append(solr.search(Q(tokens=tokens) | Q(stem=stems), sort='score desc', score=True))
+        results.append(solr.search(Q(tokens=tokens) & Q(stem=stems) & Q(lemma=lemmas) & Q(posTag=posTags) &
+                                   Q(hypernym=hypernyms) & Q(hyponym=hyponyms) & Q(meronym=meronyms) & Q(holonym=holonyms),
+                                   sort='score desc', score=True, fl='*,score'))
 
     for i in range(len(results)):
         print('\n-----------------------------------------------------------------------------------------------\n')
         print("Saw {0} result(s).".format(len(results[i])), '\n')
-        print('Input sentence', i + 1, ': ', input[i])
+        print('Input sentence', i + 1, ': ', input[i], '\n')
         for result in results[i]:
             print("The ID is '{0}'.".format(result['id']))
-            print("The ID is '{0}'.".format(result['text']))
+            print("The Sentence is '{0}'.".format(result['text']))
+            print("The Score is '{0}'.".format(result['score']))
+            print('\n')
 
 
 if __name__ == '__main__':

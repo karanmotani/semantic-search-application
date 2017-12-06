@@ -7,6 +7,8 @@ from solrq import Q
 from nltk.stem.porter import *
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
+import spacy
+nlp = spacy.load('en')
 
 # nltk.download('reuters')
 # nltk.download('punkt')
@@ -14,8 +16,8 @@ from nltk.corpus import wordnet
 
 solr1 = pysolr.Solr('http://localhost:8983/solr/nlp-core1', timeout=10)
 solr2 = pysolr.Solr('http://localhost:8983/solr/nlp-core2', timeout=10)
-solr1.delete(q='*:*')
-solr2.delete(q='*:*')
+# solr1.delete(q='*:*')
+# solr2.delete(q='*:*')
 
 
 def getDocuments():
@@ -28,7 +30,10 @@ def getDocuments():
 
 def getInput():
     # Getting the input search query
-    input = 'he said'
+    # testSentence = '''Comissaria Smith said spot bean prices rose to 340 to 350 cruzados per arroba of 15 kilos.'''
+    # testSentence = '''Comissaria Smith said that sales of wheat were low.'''
+    # testSentence = '''The wheat four is for shipment March-May and the bonus awarded was 119.05 dlrs per tonnes and will be paid in the form of commodities from the CCC inventory.'''
+    input = 'Comissaria Smith said that sales of wheat were low.'
     input = tokenize.sent_tokenize(input.replace('\n', ''))
     # print('Input sentence is: ', input)
 
@@ -39,16 +44,25 @@ def segmentation(documents, documentIDs):
     docList = []
     print('Number of Documents: ', len(documents)-6769)
     for i in range(len(documents)-6769):
+
+        fileName = "/Users/karanmotani/dev/nlp-project/corpus/document_" + str(i) + ".txt"
+        text_file = open(fileName, "w")
+
         sentence = tokenize.sent_tokenize(reuters.raw(documentIDs[i]).replace('\n', ''))
+
         for j in range(len(sentence)):
+
+            text_file.write(sentence[j])
+
             tokens = ' '
-            id = str(documents[i]) + '-' + str(j)
+            # id = str(documents[i]) + '-' + str(j)
+            id = str(i) + '-' + str(j)
             listOfTokens = tokenization(sentence[j])
             tokens += ' '.join(str(x) for x in listOfTokens) + ' '
             docList.append({'id': id,
                             'tokens': tokens,
                             'text': sentence[j]})
-
+        text_file.close()
     return docList
 
 
@@ -67,8 +81,10 @@ def indexing(documents):
             hyponyms = ' '
             meronyms = ' '
             holonyms = ' '
+            np = ' '
 
-            id = str(documents[i]) + '-' + str(j)
+            # id = str(documents[i]) + '-' + str(j)
+            id = str(i) + '-' + str(j)
 
             # tokenize the words from the string
             listOfTokens = tokenization(sentence[j])
@@ -76,6 +92,11 @@ def indexing(documents):
 
             # get POS tags for the tokens
             pos += ' '.join(str(y) for x, y in posTagging(listOfTokens)) + ' '
+
+            # get Noun Phrases for the entire sentence
+            np += ', '.join(str(x) for x in getNounPhrases(sentence[j])) + ' '
+            # print(np)
+
 
             for k in range(len(listOfTokens)):
                 # Stem the tokens generated from tokenization
@@ -111,6 +132,7 @@ def indexing(documents):
                             'posTag': pos,
                             'stem': stems,
                             'lemma': lemmas,
+                            'nounPhrases': np,
                             'hypernym': hypernyms,
                             'hyponym': hyponyms,
                             'meronym': meronyms,
@@ -132,6 +154,7 @@ def queryIndexing(documents):
             pos = ' '
             stems = []
             lemmas = []
+            np = ' '
             hypernyms = ' '
             hyponyms = ' '
             meronyms = ' '
@@ -147,6 +170,10 @@ def queryIndexing(documents):
 
             # get POS tags for the tokens
             pos += ' '.join(str(y) for x, y in posTagging(listOfTokens)) + ' '
+
+            # get Noun Phrases for the entire sentence
+            np += ', '.join(str(x) for x in getNounPhrases(sentence[j])) + ' '
+            # print(np)
 
             for k in range(len(listOfTokens)):
                 # Stem the tokens generated from tokenization
@@ -195,6 +222,7 @@ def queryIndexing(documents):
                             'posTag': pos,
                             'stem': stems,
                             'lemma': lemmas,
+                            'nounPhrases': np,
                             'hypernym': hypernyms,
                             'hyponym': hyponyms,
                             'meronym': meronyms,
@@ -231,6 +259,19 @@ def lemmatize(token):
     # print(type(lemma))
 
     return lemma
+
+
+def getNounPhrases(sentence):
+    # noun phrase extraction
+    nP = []
+
+    # print(sentence)
+
+    doc = nlp(sentence)
+    for nounPhrase in doc.noun_chunks:
+        nP.append(nounPhrase)
+
+    return nP
 
 
 def posTagging(tokens):
@@ -331,13 +372,15 @@ def deeperSearch(queryIndex):
         stems = queryIndex[i]['stem']
         lemmas = queryIndex[i]['lemma']
         posTags = queryIndex[i]['posTag']
+        nounPhrases = queryIndex[i]['nounPhrases']
         hypernyms = queryIndex[i]['hypernym']
         hyponyms = queryIndex[i]['hyponym']
         meronyms = queryIndex[i]['meronym']
         holonyms = queryIndex[i]['holonym']
 
         results.append(solr2.search(Q(tokens=tokens) & Q(stem=stems) & Q(lemma=lemmas) & Q(posTag=posTags) &
-                                   Q(hypernym=hypernyms) & Q(hyponym=hyponyms) & Q(meronym=meronyms) & Q(holonym=holonyms),
+                                    Q(nounPhrases=nounPhrases) & Q(hypernym=hypernyms) & Q(hyponym=hyponyms) &
+                                    Q(meronym=meronyms) & Q(holonym=holonyms),
                                    sort='score desc', score=True, fl='*,score'))
 
     for i in range(len(results)):
@@ -362,14 +405,16 @@ def specialisedDeeperSearch(queryIndex):
         stems = queryIndex[i]['stem']
         lemmas = queryIndex[i]['lemma']
         posTags = queryIndex[i]['posTag']
+        nounPhrases = queryIndex[i]['nounPhrases']
         hypernyms = queryIndex[i]['hypernym']
         hyponyms = queryIndex[i]['hyponym']
         meronyms = queryIndex[i]['meronym']
         holonyms = queryIndex[i]['holonym']
 
-        results.append(solr2.search((Q(tokens=tokens)^2) & (Q(stem=stems)) & (Q(lemma=lemmas)^6) & Q(posTag=posTags) &
-                                    (Q(hypernym=hypernyms)^2) & Q(hyponym=hyponyms) & Q(meronym=meronyms) & Q(holonym=holonyms),
-                                   sort='score desc', score=True, fl='*,score'))
+        results.append(solr2.search((Q(tokens=tokens)^2) & (Q(stem=stems)^0.5) & (Q(lemma=lemmas)^6) &
+                                    (Q(posTag=posTags)^0) & (Q(nounPhrases=nounPhrases)^5) & (Q(hypernym=hypernyms)^2) &
+                                    (Q(hyponym=hyponyms)^0.5) & (Q(meronym=meronyms)^0.5) & (Q(holonym=holonyms)^0.5),
+                                    sort='score desc', score=True, fl='*,score'))
 
     for i in range(len(results)):
         print('\n-----------------------------------------------------------------------------------------------\n')
@@ -388,13 +433,13 @@ if __name__ == '__main__':
     input = getInput()
 
     # Task 2 - Naive approach
-    indexData = segmentation(train, documentIDs)
-    solrDataTaskOne(indexData)
+    # indexData = segmentation(train, train)
+    # solrDataTaskOne(indexData)
     searching(input)
 
     # Task 3 - Deeper NLP Pipeline
-    index = indexing(train)
-    solrDataTaskTwo(index)
+    # index = indexing(train)
+    # solrDataTaskTwo(index)
     queryIndex = queryIndexing(input)
     deeperSearch(queryIndex)
 

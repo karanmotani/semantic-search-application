@@ -12,14 +12,14 @@ import re
 
 nlp = spacy.load('en')
 
-# nltk.download('reuters')
-# nltk.download('punkt')
-# nltk.download('averaged_perceptron_tagger')
+nltk.download('reuters')
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
 
 solr1 = pysolr.Solr('http://localhost:8983/solr/nlp-core1', timeout=1000)
 solr2 = pysolr.Solr('http://localhost:8983/solr/nlp-core2', timeout=1000)
-# solr1.delete(q='*:*')
-# solr2.delete(q='*:*')
+solr1.delete(q='*:*')
+solr2.delete(q='*:*')
 
 
 def getDocuments():
@@ -32,7 +32,9 @@ def getDocuments():
 
 def getInput():
     # Getting the input search query
+    # input = 'Wheat prices for month of November compared to last year'
     input = 'coffee exports dropped over the years'
+    # input = 'will be its most profitable first quarter since 1983'
     input = tokenize.sent_tokenize(input.replace('\n', ''))
     # print('Input sentence is: ', input)
 
@@ -41,7 +43,7 @@ def getInput():
 
 def segmentation(documents, documentIDs):
     docList = []
-    print('Number of Documents: ', len(documents)-4769)
+    # print('Number of Documents: ', len(documents)-4769)
     for i in range(len(documents)-4769):
 
         fileName = "/Users/karanmotani/dev/nlp-project/corpus/document_" + str(i) + ".txt"
@@ -228,6 +230,7 @@ def queryIndexing(documents):
 
             docList.append({
                             # 'id': id,
+                            'text': sentence[j],
                             'tokens': tokens,
                             'posTag': pos,
                             'stem': stems,
@@ -410,6 +413,7 @@ def specialisedDeeperSearch(queryIndex):
 
     # Deeper NLP Pipeline search
     for i in range(len(queryIndex)):
+        text = queryIndex[i]['text']
         tokens = queryIndex[i]['tokens']
         stems = queryIndex[i]['stem']
         lemmas = queryIndex[i]['lemma']
@@ -420,8 +424,8 @@ def specialisedDeeperSearch(queryIndex):
         meronyms = queryIndex[i]['meronym']
         holonyms = queryIndex[i]['holonym']
 
-        results.append(solr2.search((Q(tokens=tokens)^2) & (Q(stem=stems)^0.5) & (Q(lemma=lemmas)^4) &
-                                    (Q(posTag=posTags)^0) & (Q(nounPhrases=nounPhrases)^5) & (Q(hypernym=hypernyms)^2) &
+        results.append(solr2.search((Q(text=text)^0.5) & (Q(stem=stems)^0.5) & (Q(lemma=lemmas)^4) &
+                                    (Q(posTag=posTags)^0.02) & (Q(nounPhrases=nounPhrases)^5) & (Q(hypernym=hypernyms)^2) &
                                     (Q(hyponym=hyponyms)^0.5) & (Q(meronym=meronyms)^0.5) & (Q(holonym=holonyms)^0.5),
                                     sort='score desc', score=True, fl='*,score'))
 
@@ -439,16 +443,17 @@ def specialisedDeeperSearch(queryIndex):
 if __name__ == '__main__':
     start_time = time.clock()
     documentIDs, train, test = getDocuments()
+    print('Number of Documents: ', len(train) - 4769)
     input = getInput()
 
     # Task 2 - Naive approach
-    # indexData = segmentation(train, train)
-    # solrDataTaskOne(indexData)
+    indexData = segmentation(train, train)
+    solrDataTaskOne(indexData)
     searching(input)
 
     # Task 3 - Deeper NLP Pipeline
-    # index = indexing(train)
-    # solrDataTaskTwo(index)
+    index = indexing(train)
+    solrDataTaskTwo(index)
     queryIndex = queryIndexing(input)
     deeperSearch(queryIndex)
 

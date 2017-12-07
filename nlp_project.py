@@ -1,21 +1,22 @@
 import nltk
 import time
 import pysolr
+import spacy
 from nltk import tokenize
 from nltk.corpus import reuters
 from solrq import Q
 from nltk.stem.porter import *
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
-import spacy
+
 nlp = spacy.load('en')
 
 # nltk.download('reuters')
 # nltk.download('punkt')
 # nltk.download('averaged_perceptron_tagger')
 
-solr1 = pysolr.Solr('http://localhost:8983/solr/nlp-core1', timeout=10)
-solr2 = pysolr.Solr('http://localhost:8983/solr/nlp-core2', timeout=10)
+solr1 = pysolr.Solr('http://localhost:8983/solr/nlp-core1', timeout=1000)
+solr2 = pysolr.Solr('http://localhost:8983/solr/nlp-core2', timeout=1000)
 # solr1.delete(q='*:*')
 # solr2.delete(q='*:*')
 
@@ -30,10 +31,7 @@ def getDocuments():
 
 def getInput():
     # Getting the input search query
-    # testSentence = '''Comissaria Smith said spot bean prices rose to 340 to 350 cruzados per arroba of 15 kilos.'''
-    # testSentence = '''Comissaria Smith said that sales of wheat were low.'''
-    # testSentence = '''The wheat four is for shipment March-May and the bonus awarded was 119.05 dlrs per tonnes and will be paid in the form of commodities from the CCC inventory.'''
-    input = 'Comissaria Smith said that sales of wheat were low.'
+    input = 'coffee exports dropped over the years'
     input = tokenize.sent_tokenize(input.replace('\n', ''))
     # print('Input sentence is: ', input)
 
@@ -42,8 +40,8 @@ def getInput():
 
 def segmentation(documents, documentIDs):
     docList = []
-    print('Number of Documents: ', len(documents)-6769)
-    for i in range(len(documents)-6769):
+    print('Number of Documents: ', len(documents)-4769)
+    for i in range(len(documents)-4769):
 
         fileName = "/Users/karanmotani/dev/nlp-project/corpus/document_" + str(i) + ".txt"
         text_file = open(fileName, "w")
@@ -68,8 +66,8 @@ def segmentation(documents, documentIDs):
 
 def indexing(documents):
     docList = []
-    # print('Number of Documents: ', len(documents)-6769)
-    for i in range(len(documents)-6769):
+    # print('Number of Documents: ', len(documents)-4769)
+    for i in range(len(documents)-4769):
         sentence = tokenize.sent_tokenize(reuters.raw(documents[i]).replace('\n', ''))
         for j in range(len(sentence)):
 
@@ -263,9 +261,8 @@ def lemmatize(token):
 
 def getNounPhrases(sentence):
     # noun phrase extraction
-    nP = []
 
-    # print(sentence)
+    nP = []
 
     doc = nlp(sentence)
     for nounPhrase in doc.noun_chunks:
@@ -411,7 +408,7 @@ def specialisedDeeperSearch(queryIndex):
         meronyms = queryIndex[i]['meronym']
         holonyms = queryIndex[i]['holonym']
 
-        results.append(solr2.search((Q(tokens=tokens)^2) & (Q(stem=stems)^0.5) & (Q(lemma=lemmas)^6) &
+        results.append(solr2.search((Q(tokens=tokens)^2) & (Q(stem=stems)^0.5) & (Q(lemma=lemmas)^4) &
                                     (Q(posTag=posTags)^0) & (Q(nounPhrases=nounPhrases)^5) & (Q(hypernym=hypernyms)^2) &
                                     (Q(hyponym=hyponyms)^0.5) & (Q(meronym=meronyms)^0.5) & (Q(holonym=holonyms)^0.5),
                                     sort='score desc', score=True, fl='*,score'))

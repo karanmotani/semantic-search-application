@@ -18,8 +18,8 @@ nlp = spacy.load('en')
 
 solr1 = pysolr.Solr('http://localhost:8983/solr/nlp-core1', timeout=1000)
 solr2 = pysolr.Solr('http://localhost:8983/solr/nlp-core2', timeout=1000)
-solr1.delete(q='*:*')
-solr2.delete(q='*:*')
+# solr1.delete(q='*:*')
+# solr2.delete(q='*:*')
 
 
 def getDocuments():
@@ -95,7 +95,6 @@ def indexing(documents):
 
             # get Noun Phrases for the entire sentence
             np += ', '.join(str(x) for x in getNounPhrases(sentence[j])) + ' '
-            # print(np)
 
 
             for k in range(len(listOfTokens)):
@@ -125,6 +124,16 @@ def indexing(documents):
 
             stems = ' '.join(str(x) for x in stems)
             lemmas = ' '.join(str(x) for x in lemmas)
+
+            tokens = re.sub(' +', ' ', tokens)
+            pos = re.sub(' +', ' ', pos)
+            stems = re.sub(' +', ' ', stems)
+            lemmas = re.sub(' +', ' ', lemmas)
+            np = re.sub(' +', ' ', np)
+            hypernyms = re.sub(' +', ' ', hypernyms)
+            hyponyms = re.sub(' +', ' ', hyponyms)
+            meronyms = re.sub(' +', ' ', meronyms)
+            holonyms = re.sub(' +', ' ', holonyms)
 
             docList.append({'id': id,
                             'text': sentence[j],
@@ -433,13 +442,13 @@ if __name__ == '__main__':
     input = getInput()
 
     # Task 2 - Naive approach
-    indexData = segmentation(train, train)
-    solrDataTaskOne(indexData)
+    # indexData = segmentation(train, train)
+    # solrDataTaskOne(indexData)
     searching(input)
 
     # Task 3 - Deeper NLP Pipeline
-    index = indexing(train)
-    solrDataTaskTwo(index)
+    # index = indexing(train)
+    # solrDataTaskTwo(index)
     queryIndex = queryIndexing(input)
     deeperSearch(queryIndex)
 

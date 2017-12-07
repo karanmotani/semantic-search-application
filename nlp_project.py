@@ -8,6 +8,7 @@ from solrq import Q
 from nltk.stem.porter import *
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
+import re
 
 nlp = spacy.load('en')
 
@@ -17,8 +18,8 @@ nlp = spacy.load('en')
 
 solr1 = pysolr.Solr('http://localhost:8983/solr/nlp-core1', timeout=1000)
 solr2 = pysolr.Solr('http://localhost:8983/solr/nlp-core2', timeout=1000)
-# solr1.delete(q='*:*')
-# solr2.delete(q='*:*')
+solr1.delete(q='*:*')
+solr2.delete(q='*:*')
 
 
 def getDocuments():
@@ -49,7 +50,7 @@ def segmentation(documents, documentIDs):
         sentence = tokenize.sent_tokenize(reuters.raw(documentIDs[i]).replace('\n', ''))
 
         for j in range(len(sentence)):
-
+            sentence[j] = re.sub(' +', ' ', sentence[j])
             text_file.write(sentence[j])
 
             tokens = ' '
@@ -71,6 +72,7 @@ def indexing(documents):
         sentence = tokenize.sent_tokenize(reuters.raw(documents[i]).replace('\n', ''))
         for j in range(len(sentence)):
 
+            sentence[j] = re.sub(' +', ' ', sentence[j])
             tokens = ' '
             pos = ' '
             stems = []
@@ -148,6 +150,7 @@ def queryIndexing(documents):
         sentence = tokenize.sent_tokenize(documents[i].replace('\n', ''))
         for j in range(len(sentence)):
 
+            sentence[j] = re.sub(' +', ' ', sentence[j])
             tokens = ' '
             pos = ' '
             stems = []
@@ -430,13 +433,13 @@ if __name__ == '__main__':
     input = getInput()
 
     # Task 2 - Naive approach
-    # indexData = segmentation(train, train)
-    # solrDataTaskOne(indexData)
+    indexData = segmentation(train, train)
+    solrDataTaskOne(indexData)
     searching(input)
 
     # Task 3 - Deeper NLP Pipeline
-    # index = indexing(train)
-    # solrDataTaskTwo(index)
+    index = indexing(train)
+    solrDataTaskTwo(index)
     queryIndex = queryIndexing(input)
     deeperSearch(queryIndex)
 

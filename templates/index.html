@@ -1,0 +1,27 @@
+<html>
+<head>
+
+<title>Semantic Search</title>
+<link href = "//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel = "stylesheet">
+<link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
+<link href="{{url_for('static',filename='css/index.css')}}" rel="stylesheet">
+
+</head>
+<body>
+
+<form method="POST" role="form">
+	<div class="form-group">
+		<label for="email">Enter query:</label>
+    	<input type="inputQuery" name="query" class="form-control" id="query">
+  	</div>
+  	<button type="submit" class="btn btn-default" id='querySubmit'>Submit</button>
+</form>
+
+<span id='answer'></span>
+
+<script src = "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src = "//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script src="{{url_for('static',filename='js/app.js')}}"></script>  
+
+</body>
+</html>

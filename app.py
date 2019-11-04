@@ -25,8 +25,10 @@ def index():
 @app.route("/getInfo/", methods=['POST'])
 def getInfo():
     query = request.args.get('query')
+    print(query)
     # response = subprocess.check_output([sys.executable, "nlp_project.py", query])
     response = nlp_project.getResults(query)
+    print(response)
     # answer, link = qna.getAnswer(query)
     d = {
         'query': query,
@@ -37,5 +39,5 @@ def getInfo():
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run() #app run
+    # app.debug = True
+    app.run(debug=True) #app run

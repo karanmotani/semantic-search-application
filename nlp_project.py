@@ -34,9 +34,9 @@ def getDocuments():
 def getInput():
     # Getting the input search query
     # input = 'Wheat prices for month of November compared to last year'
-    # input = 'coffee exports dropped over the years'
+    input = 'coffee exports dropped over the years'
     # input = 'will be its most profitable first quarter since 1983'
-    input = sys.argv[1];
+    # input = sys.argv[1];
     # input = "was also raised by 50 cts"
     input = tokenize.sent_tokenize(input.replace('\n', ''))
     # print('Input sentence is: ', input)
@@ -441,8 +441,8 @@ def specialisedDeeperSearch(queryIndex):
             # print("The Sentence is '{0}'.".format(result['text']))
             # print("The Score is '{0}'.".format(result['score']))
             # print('\n')
-            print(str(result['text'])[2:-2])
-            return str(result['text'])[2:-2]
+            print(result['text'])
+            return result['text']
 
 
 def getResults(query):
